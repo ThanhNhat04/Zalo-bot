@@ -1,66 +1,62 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+"use client";
+import { useState, useEffect } from "react";
 
 export default function Home() {
+  const [chatId, setChatId] = useState("");
+  const [text, setText] = useState("");
+  const [logs, setLogs] = useState([]);
+
+  // Lấy log tin nhắn từ webhook
+  const fetchLogs = async () => {
+    const res = await fetch("/api/webhook");
+    const data = await res.json();
+    setLogs(data);
+  };
+
+  useEffect(() => {
+    fetchLogs();
+    const interval = setInterval(fetchLogs, 3000); // refresh 3s/lần
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleSend = async () => {
+    if (!chatId || !text) return alert("Nhập chat_id và nội dung");
+    await fetch("/api/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: chatId, text })
+    });
+    setText("");
+    fetchLogs();
+  };
+
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <main style={{ padding: "2rem", fontFamily: "sans-serif" }}>
+      <h1>Zalo Bot Web Interface</h1>
+      <div style={{ marginBottom: "1rem" }}>
+        <input
+          placeholder="Chat ID"
+          value={chatId}
+          onChange={(e) => setChatId(e.target.value)}
+          style={{ marginRight: "0.5rem" }}
         />
-        <div className={styles.intro}>
-          <h1>To get started, edit the page.js file.</h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+        <input
+          placeholder="Nội dung"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          style={{ marginRight: "0.5rem" }}
+        />
+        <button onClick={handleSend}>Gửi tin nhắn</button>
+      </div>
+
+      <h2>Log tin nhắn nhận được</h2>
+      <div style={{ maxHeight: "300px", overflowY: "auto", border: "1px solid #ccc", padding: "0.5rem" }}>
+        {logs.map((msg, idx) => (
+          <div key={idx}>
+            <b>{msg.from}</b> [{msg.time}]: {msg.text}
+          </div>
+        ))}
+      </div>
+    </main>
   );
 }
