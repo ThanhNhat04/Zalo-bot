@@ -10,6 +10,7 @@ export default function Home() {
   const fetchLogs = async () => {
     const res = await fetch("/api/webhook");
     const data = await res.json();
+    console.log("Fetched logs:", data); 
     setLogs(data);
   };
 
@@ -36,7 +37,7 @@ export default function Home() {
       <div style={{ marginBottom: "1rem" }}>
         <input
           placeholder="Chat ID"
-          value={chatId}
+          value="b7258526f4731d2d4462"
           onChange={(e) => setChatId(e.target.value)}
           style={{ marginRight: "0.5rem" }}
         />
