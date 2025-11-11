@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 
 export default function Home() {
-  const [chatId, setChatId] = useState("");
+  const [chatId, setChatId] = useState("b7258526f4731d2d4462");
   const [text, setText] = useState("");
   const [logs, setLogs] = useState([]);
 
@@ -37,7 +37,7 @@ export default function Home() {
       <div style={{ marginBottom: "1rem" }}>
         <input
           placeholder="Chat ID"
-          value="b7258526f4731d2d4462"
+          value={chatId}
           onChange={(e) => setChatId(e.target.value)}
           style={{ marginRight: "0.5rem" }}
         />
