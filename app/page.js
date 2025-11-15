@@ -8,7 +8,7 @@ export default function Home() {
 
   // Lấy log tin nhắn từ webhook
   const fetchLogs = async () => {
-    const res = await fetch("/api/webhook");
+    const res = await fetch("/api/zalo/webhook");
     const data = await res.json();
     console.log("Fetched logs:", data); 
     setLogs(data);
@@ -22,7 +22,7 @@ export default function Home() {
 
   const handleSend = async () => {
     if (!chatId || !text) return alert("Nhập chat_id và nội dung");
-    await fetch("/api/send", {
+    await fetch("/api/zalo/send", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ chat_id: chatId, text })
