@@ -36,6 +36,8 @@ export async function POST(req) {
   }
 
   const data = await req.json();
+  console.log("Received from Zalo:", data);
+
   const msg = data.message;
 
   if (!msg || !msg.text) {
@@ -59,22 +61,15 @@ export async function POST(req) {
       return "Đã thêm vào Google Sheet";
     },
 
-    "/ping": async () => {
-      return "Pong!";
-    },
-
     "/help": async () => {
       return "Các lệnh:\n/add <text>\n/ping\n/help";
     },
-
-    // sau này thêm:
-    // "/export": async () => {},
-    // "/delete": async () => {},
-    // "/update": async () => {},
   };
 
   // Tìm lệnh đầu tiên trong message
   const cmd = text.split(" ")[0];
+
+  console.log("Command:", cmd);
 
   if (commands[cmd]) {
     let reply = "";
@@ -98,10 +93,7 @@ export async function POST(req) {
 }
 
 
-// ==============================
-// Hàm gửi tin nhắn
-// (theo format bạn yêu cầu)
-// ==============================
+
 async function sendMessageToClient(chatId, text) {
   return axios.post(
     `https://bot-api.zapps.me/bot${process.env.ZALO_BOT_TOKEN}/sendMessage`,
