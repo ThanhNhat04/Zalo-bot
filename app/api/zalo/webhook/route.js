@@ -26,9 +26,10 @@
 import axios from "axios";
 import { sendToSheet } from "@/lib/googleSheet.js";
 
-
+// Định nghĩa commands ngoài hàm POST để không tạo lại mỗi lần
 const commands = {
   "/add": async (param) => {
+    // Gửi bất đồng bộ, không chặn trả về
     sendToSheet("add", param).catch(console.error);
     return "Đã thêm vào Google Sheet";
   },
@@ -42,15 +43,16 @@ const commands = {
   },
 };
 
-// Hàm gửi message đến client
+// Hàm gửi message đến client (theo cấu trúc bạn cung cấp)
 async function sendMessageToClient(chatId, text) {
   try {
-    await axios.post("https://api.zalo.me/v2.0/oa/message", {
-      recipient: { chatId },
-      message: { text },
-    }, {
-      headers: { "Authorization": `Bearer ${process.env.ZALO_TOKEN}` }
-    });
+    return axios.post(
+      `https://bot-api.zapps.me/bot${process.env.ZALO_BOT_TOKEN}/sendMessage`,
+      {
+        chat_id: chatId,
+        text: text,
+      }
+    );
   } catch (err) {
     console.error("Send message error:", err.message);
   }
@@ -84,7 +86,7 @@ export async function POST(req) {
     }
   }
 
-  // Gửi message bất đồng bộ, không chặn response chính
+  // Gửi message bất đồng bộ, không block response
   sendMessageToClient(chatId, reply).catch(console.error);
 
   return Response.json({ ok: true });
@@ -92,15 +94,15 @@ export async function POST(req) {
 
 
 
-async function sendMessageToClient(chatId, text) {
-  return axios.post(
-    `https://bot-api.zapps.me/bot${process.env.ZALO_BOT_TOKEN}/sendMessage`,
-    {
-      chat_id: chatId,         
-      text: text
-    }
-  );
-}
+// async function sendMessageToClient(chatId, text) {
+//   return axios.post(
+//     `https://bot-api.zapps.me/bot${process.env.ZALO_BOT_TOKEN}/sendMessage`,
+//     {
+//       chat_id: chatId,         
+//       text: text
+//     }
+//   );
+// }
 
 export function GET() {
   return new Response(JSON.stringify(messages), { status: 200 });
