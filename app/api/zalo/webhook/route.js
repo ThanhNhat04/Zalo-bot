@@ -5,34 +5,36 @@ let messages = [];
 export async function POST(req) {
   const token = req.headers.get("x-bot-api-secret-token");
 
-  // --- Kiểm tra token ---
   if (!token || token !== process.env.SECRET_TOKEN) {
     console.warn("Unauthorized request: Invalid token");
-    return new Response(JSON.stringify({ error: "Unauthorized" }), {
-      status: 401,
-    });
+    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
   }
 
   let data;
   try {
     data = await req.json();
+    console.log("Received payload:", data);
   } catch (err) {
     console.error("Invalid JSON payload:", err);
     return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400 });
   }
 
-  console.log("Received from Zalo:", data);
+  // Log dữ liệu raw từ Zalo
+  console.log("=== ZALO WEBHOOK RECEIVED ===");
+  console.log(JSON.stringify(data, null, 2));
+  console.log("=============================");
 
-  // --- Kiểm tra dữ liệu event và message ---
-  if (!data.event || !data.message) {
+  const event = data.event_name || data.event;
+  const message = data.result?.message || data.message;
+
+  if (!event || !message) {
     console.warn("Missing event or message in payload");
     return new Response(JSON.stringify({ error: "Invalid data structure" }), { status: 400 });
   }
 
-  // --- Chỉ xử lý tin nhắn văn bản ---
-  if (data.event === "message.text.received" && data.message.text) {
-    const text = data.message.text.trim();
-    const fromId = data.message.from?.id;
+  if (event === "message.text.received" && message.text) {
+    const text = message.text.trim();
+    const fromId = message.from?.id;
 
     if (!text) {
       console.warn("Empty text message received");
@@ -45,13 +47,19 @@ export async function POST(req) {
     }
 
     // Lưu tin nhắn vào bộ nhớ tạm
-    messages.push({
+    const logMessage = {
       from: fromId,
       text,
       time: new Date().toLocaleString(),
-    });
+    };
+    messages.push(logMessage);
 
-    // --- Xử lý lệnh /add ---
+    // Log chi tiết tin nhắn ra console Vercel
+    console.log("=== MESSAGE LOGGED ===");
+    console.log(JSON.stringify(logMessage, null, 2));
+    console.log("======================");
+
+    // Xử lý lệnh /add
     if (text.startsWith("/add ")) {
       const valueToAdd = text.replace("/add ", "").trim();
       if (valueToAdd) {
@@ -69,7 +77,7 @@ export async function POST(req) {
       }
     }
   } else {
-    console.warn("Unsupported event type or missing text:", data.event);
+    console.warn("Unsupported event type or missing text:", event);
   }
 
   return new Response(JSON.stringify({ status: "ok" }), { status: 200 });
@@ -77,5 +85,5 @@ export async function POST(req) {
 
 // Lấy tất cả tin nhắn đã lưu (debug)
 export function GET() {
-  return new Response(JSON.stringify(messages), { status: 200 });
+  return new Response(JSON.stringify(messages, null, 2), { status: 200 });
 }
