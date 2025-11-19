@@ -1,63 +1,67 @@
 "use client";
-import { useState, useEffect } from "react";
 
-export default function Home() {
-  const [chatId, setChatId] = useState("b7258526f4731d2d4462");
-  const [text, setText] = useState("");
-  const [logs, setLogs] = useState([]);
+import { useEffect, useState } from "react";
 
-  // Lấy log tin nhắn từ webhook
-  const fetchLogs = async () => {
-    const res = await fetch("/api/zalo/webhook");
-    const data = await res.json();
-    console.log("Fetched logs:", data); 
-    setLogs(data);
-  };
+export default function OrdersPage() {
+  const [rows, setRows] = useState([]);
 
   useEffect(() => {
-    fetchLogs();
-    const interval = setInterval(fetchLogs, 3000); // refresh 3s/lần
-    return () => clearInterval(interval);
+    async function fetchData() {
+      const res = await fetch("/api/google/get");
+      const data = await res.json();
+      if (data.ok) setRows(data.rows);
+    }
+    fetchData();
   }, []);
 
-  const handleSend = async () => {
-    if (!chatId || !text) return alert("Nhập chat_id và nội dung");
-    await fetch("/api/zalo/send", {
+
+  function postData() {
+    fetch("/api/google/post", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chat_id: chatId, text })
+      body: JSON.stringify({
+        result: {
+          message: {
+            text: "Sản phẩm A;10;50000"
+          }
+        }
+      })
+    }).then(res => res.json()).then(data => {
+      if (data.ok) {
+        // Refresh data
+        fetch("/api/google/get")
+          .then(res => res.json())
+          .then(data => {
+            if (data.ok) setRows(data.rows);
+          });
+      }
     });
-    setText("");
-    fetchLogs();
-  };
+  }
 
   return (
-    <main style={{ padding: "2rem", fontFamily: "sans-serif" }}>
-      <h1>Zalo Bot Web Interface</h1>
-      <div style={{ marginBottom: "1rem" }}>
-        <input
-          placeholder="Chat ID"
-          value={chatId}
-          onChange={(e) => setChatId(e.target.value)}
-          style={{ marginRight: "0.5rem" }}
-        />
-        <input
-          placeholder="Nội dung"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          style={{ marginRight: "0.5rem" }}
-        />
-        <button onClick={handleSend}>Gửi tin nhắn</button>
-      </div>
+    <div style={{ padding: 20 }}>
+      <h1>Theo dõi đơn hàng</h1>
+      <button onClick={postData}>Thêm đơn hàng mẫu</button>
 
-      <h2>Log tin nhắn nhận được</h2>
-      <div style={{ maxHeight: "300px", overflowY: "auto", border: "1px solid #ccc", padding: "0.5rem" }}>
-        {logs.map((msg, idx) => (
-          <div key={idx}>
-            <b>{msg.from}</b> [{msg.time}]: {msg.text}
-          </div>
-        ))}
-      </div>
-    </main>
+      <table border="1" cellPadding="6" style={{ marginTop: 20, borderCollapse: "collapse" }}>
+        <thead>
+          <tr>
+            {rows[0]?.map((header, index) => (
+              <th key={index}>{header}</th>
+            ))}
+          </tr>
+        </thead>
+
+        <tbody>
+          {rows.slice(1).map((row, rIndex) => (
+            <tr key={rIndex}>
+              {row.map((cell, cIndex) => (
+                <td key={cIndex}>{cell}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
