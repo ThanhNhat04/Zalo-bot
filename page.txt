@@ -9,7 +9,7 @@ export default function Dashboard() {
   const [logs, setLogs] = useState([]);
 
   const fetchLogs = async () => {
-    const res = await fetch("/api/zalo/webhook");
+    const res = await fetch("/api/zalo/whook");
     const data = await res.json();
     console.log("Fetched logs:", data);
     setLogs(data);
