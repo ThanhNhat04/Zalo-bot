@@ -26,68 +26,66 @@
 import axios from "axios";
 import { sendToSheet } from "@/lib/googleSheet.js";
 
-let messages = []; 
+
+const commands = {
+  "/add": async (param) => {
+    sendToSheet("add", param).catch(console.error);
+    return "Đã thêm vào Google Sheet";
+  },
+
+  "/help": async () => {
+    return "Các lệnh:\n/add <text>\n/ping\n/help";
+  },
+
+  "/ping": async () => {
+    return "Pong!";
+  },
+};
+
+// Hàm gửi message đến client
+async function sendMessageToClient(chatId, text) {
+  try {
+    await axios.post("https://api.zalo.me/v2.0/oa/message", {
+      recipient: { chatId },
+      message: { text },
+    }, {
+      headers: { "Authorization": `Bearer ${process.env.ZALO_TOKEN}` }
+    });
+  } catch (err) {
+    console.error("Send message error:", err.message);
+  }
+}
 
 export async function POST(req) {
   const token = req.headers.get("x-bot-api-secret-token");
-
   if (token !== process.env.SECRET_TOKEN) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
   }
 
   const data = await req.json();
-  console.log("Received from Zalo:", data);
-
   const msg = data.message;
+  if (!msg?.text) return Response.json({ ok: true });
 
-  if (!msg || !msg.text) {
-    return Response.json({ ok: true });
-  }
-
-  // Theo đúng format bạn yêu cầu
   const text = msg.text.trim();
-  const chatId = msg.chat.id;        // bạn yêu cầu dùng chat.id
-  const userId = msg.from.id;        // nếu cần
+  const chatId = msg.chat.id;
+  const userId = msg.from.id;
 
-  console.log("Received:", text, "From:", userId);
+  // Tách lệnh và tham số chỉ một lần
+  const [cmd, ...args] = text.split(" ");
+  const param = args.join(" ").trim();
 
-  // ==============================
-  // COMMAND HANDLER – mở rộng 100+ lệnh
-  // ==============================
-  const commands = {
-    "/add": async () => {
-      const value = text.replace("/add", "").trim();
-      await sendToSheet("add", value);
-      return "Đã thêm vào Google Sheet";
-    },
-
-    "/help": async () => {
-      return "Các lệnh:\n/add <text>\n/ping\n/help";
-    },
-  };
-
-  // Tìm lệnh đầu tiên trong message
-  const cmd = text.split(" ")[0];
-
-  console.log("Command:", cmd);
+  let reply = "Không hiểu lệnh, gõ /help";
 
   if (commands[cmd]) {
-    let reply = "";
-
     try {
-      reply = await commands[cmd]();
-
+      reply = await commands[cmd](param);
     } catch (err) {
       reply = "Lỗi: " + err.message;
     }
-
-    await sendMessageToClient(chatId, reply);
-
-    return Response.json({ ok: true });
   }
 
-  // Nếu không phải lệnh → trả lời default
-  await sendMessageToClient(chatId, "Không hiểu lệnh, gõ /help");
+  // Gửi message bất đồng bộ, không chặn response chính
+  sendMessageToClient(chatId, reply).catch(console.error);
 
   return Response.json({ ok: true });
 }
@@ -98,7 +96,7 @@ async function sendMessageToClient(chatId, text) {
   return axios.post(
     `https://bot-api.zapps.me/bot${process.env.ZALO_BOT_TOKEN}/sendMessage`,
     {
-      chat_id: chatId,         // bạn nói cần dùng chat_id
+      chat_id: chatId,         
       text: text
     }
   );
