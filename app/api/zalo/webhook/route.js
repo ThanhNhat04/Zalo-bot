@@ -64,7 +64,7 @@ export async function POST(req) {
       const valueToAdd = text.replace("/add ", "").trim();
       if (valueToAdd) {
         try {
-          await appendToSheet(process.env.SHEET_ID, "Theo dõi đơn hàng", [
+          await appendToSheet(process.env.SPREADSHEET_ID, "Theo dõi đơn hàng", [
             [valueToAdd, new Date().toLocaleString()],
           ]);
           console.log("Added to Sheet:", valueToAdd);
