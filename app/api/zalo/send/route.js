@@ -13,6 +13,7 @@ export async function POST(req) {
       chat_id,
       text
     });
+    console.log("Zalo API Response:", res.data);
 
     return new Response(JSON.stringify(res.data), { status: 200 });
   } catch (err) {
